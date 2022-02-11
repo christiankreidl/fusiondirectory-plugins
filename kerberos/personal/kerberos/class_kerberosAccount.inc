@@ -68,13 +68,13 @@ class kerberosAccount extends simplePlugin
             _('krbTicketPolicyReference'), _('FDN pointing to a Kerberos Ticket Policy object.'),
             'krbTicketPolicyReference', FALSE
           ),
-          new StringAttribute(
-            'krbPrincipalExpiration', FALSE
+          new GeneralizedTimeDateAttribute(
             _('krbPrincipalExpiration'), _('The time at which the principal expires'),
+            'krbPrincipalExpiration', FALSE, '19700101000000Z'
           ),
-          new StringAttribute(
-            'krbPasswordExpiration', FALSE
+          new GeneralizedTimeDateAttribute(
             _('krbPasswordExpiration'), _('The time at which the principal\'s password expires'),
+            'krbPasswordExpiration', FALSE, '19700101000000Z'
           ),
           new StringAttribute(
             _('krbPwdPolicyReference'), _('FDN pointing to a Kerberos Password Policy object'),
@@ -91,13 +91,13 @@ class kerberosAccount extends simplePlugin
               'krbPwdHistory', FALSE
             )
           ),
-          new StringAttribute(
-            'krbLastPwdChange', FALSE
+          new ReadOnlyLDAPAttribute(
             _('krbLastPwdChange'), _('The time at which the principal\'s password last password change happened.'),
+            'krbLastPwdChange', FALSE
           ),
-          new StringAttribute(
-            'krbLastAdminUnlock', FALSE
+          new ReadOnlyLDAPAttribute(
             _('krbLastAdminUnlock'), _('The time at which the principal was last administratively unlocked.'),
+            'krbLastAdminUnlock', FALSE
           ),
           new SetAttribute(
             new StringAttribute(
@@ -105,13 +105,13 @@ class kerberosAccount extends simplePlugin
               'krbPrincipalAliases', FALSE
             )
           ),
-          new StringAttribute(
-            'krbLastSuccessfulAuth', FALSE
+          new ReadOnlyLDAPAttribute(
             _('krbLastSuccessfulAuth'), _('The time at which the principal\'s last successful authentication happened.'),
+            'krbLastSuccessfulAuth', FALSE
           ),
-          new StringAttribute(
-            'krbLastFailedAuth', FALSE
+          new ReadOnlyLDAPAttribute(
             _('krbLastFailedAuth'), _('The time at which the principal\'s last failed authentication happened.'),
+            'krbLastFailedAuth', FALSE
           ),
           new IntAttribute(
             _('krbLoginFailedCount'), _('This attribute stores the number of failed authentication attempts happened for the principal since the last successful authentication.'),
@@ -147,12 +147,12 @@ class kerberosAccount extends simplePlugin
             'krbTicketFlags', FALSE,
             FALSE, FALSE
           ),
-          new IntAttribute(
+          new TimeAttribute(
             _('krbMaxTicketLife'), _('The maximum ticket lifetime for a principal in seconds'),
             'krbMaxTicketLife', FALSE,
             FALSE, FALSE
           ),
-          new IntAttribute(
+          new TimeAttribute(
             _('krbMaxRenewableAge'), _('Maximum renewable lifetime for a principal\'s ticket in seconds'),
             'krbMaxRenewableAge', FALSE,
             FALSE, FALSE
@@ -161,4 +161,25 @@ class kerberosAccount extends simplePlugin
       ],
     ];
   }
+
+  function prettyPrintDateTime($attribute) {
+    if ( isset($this->attrs[$attribute]) && ($this->attrs[$attribute][0]!='')) {
+      $date = LdapGeneralizedTime::fromString($this->attrs[$attribute][0]);
+      $date->setTimezone(timezone::getDefaultTimeZone());
+      $this->$attribute = $date->format('Y-m-d H:i:s');
+    } else {
+      $this->$attribute = _('Never');
+    }
+  }
+
+  function __construct ($dn = NULL, $baseobject = NULL, $parent = NULL, $mainTab = FALSE)
+  {
+    parent::__construct($dn, $baseobject, $parent, $mainTab);
+
+    kerberosAccount::prettyPrintDateTime('krbLastPwdChange');
+    kerberosAccount::prettyPrintDateTime('krbLastAdminUnlock');
+    kerberosAccount::prettyPrintDateTime('krbLastSuccessfulAuth');
+    kerberosAccount::prettyPrintDateTime('krbLastFailedAuth');
+  }
+
 }
