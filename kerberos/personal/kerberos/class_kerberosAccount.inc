@@ -18,6 +18,7 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 */
+
 class KrbTicketFlagsAttribute extends CompositeAttribute
 {
 
@@ -47,6 +48,22 @@ class KrbTicketFlagsAttribute extends CompositeAttribute
     if ($flag>0) return $flag;
     else return "";
   }
+}
+
+// MIT kerberos requires generalizedtime having suffix zeros not beeing stripped
+// class LdapGeneralizedTime strips zeros of hour, minute, seconds
+class KrbDateAttribute extends DateAttribute
+{
+  function __construct ($label, $description, $ldapName, $required, $defaultValue = 'now', $acl = "")
+  {
+    parent::__construct($label, $description, $ldapName, $required, '', $defaultValue, $acl);
+  }
+
+  protected function dateToLdap($dateValue)
+  {
+    return $dateValue->format('YmdHis') . "Z";
+  }
+
 }
 
 class kerberosAccount extends simplePlugin
@@ -98,13 +115,13 @@ class kerberosAccount extends simplePlugin
             _('krbTicketPolicyReference'), _('FDN pointing to a Kerberos Ticket Policy object.'),
             'krbTicketPolicyReference', FALSE
           ),
-          new GeneralizedTimeDateAttribute(
+          new KrbDateAttribute(
             _('krbPrincipalExpiration'), _('The time at which the principal expires'),
-            'krbPrincipalExpiration', FALSE, '19700101000000Z'
+            'krbPrincipalExpiration', FALSE, ''
           ),
-          new GeneralizedTimeDateAttribute(
+          new KrbDateAttribute(
             _('krbPasswordExpiration'), _('The time at which the principal\'s password expires'),
-            'krbPasswordExpiration', FALSE, '19700101000000Z'
+            'krbPasswordExpiration', FALSE, ''
           ),
           new StringAttribute(
             _('krbPwdPolicyReference'), _('FDN pointing to a Kerberos Password Policy object'),
@@ -143,17 +160,19 @@ class kerberosAccount extends simplePlugin
             _('krbLastFailedAuth'), _('The time at which the principal\'s last failed authentication happened.'),
             'krbLastFailedAuth', FALSE
           ),
-          new IntAttribute(
+          new ReadOnlyLDAPAttribute(
             _('krbLoginFailedCount'), _('This attribute stores the number of failed authentication attempts happened for the principal since the last successful authentication.'),
             'krbLoginFailedCount', FALSE,
-            FALSE, FALSE
           ),
           new NoAddOrderedArrayAttribute(
             new KrbExtraDataAttribute(
               _('krbExtraData'), _('This attribute holds the application specific data.'),
               'krbExtraData', FALSE
             ),
-            FALSE
+            FALSE,
+            array( // default values: one attribute of 'last modified'
+              KrbExtraDataAttribute::packLastModification()
+            )
           ),
           new SetAttribute(
             new StringAttribute(
@@ -290,6 +309,36 @@ class kerberosAccount extends simplePlugin
     kerberosAccount::prettyPrintDateTime('krbLastAdminUnlock');
     kerberosAccount::prettyPrintDateTime('krbLastSuccessfulAuth');
     kerberosAccount::prettyPrintDateTime('krbLastFailedAuth');
+  }
+
+  function prepare_save()
+  {
+    // check if any krb attribute has been changed
+    $krbchanged=false;
+    foreach ($this->attributesAccess as $key => $attr) {
+        if (isset($attr)) {
+            $krbchanged = $krbchanged | $attr->hasChanged();
+        }
+    }
+
+    $errors = parent::prepare_save();
+
+    if (!empty($errors)) {
+      return $errors;
+    }
+
+
+    // update 'last modification' attribute data
+    if ($krbchanged) {
+      for ($i = 0; $i < count($this->attrs['krbExtraData']); $i++) {
+          // find krbExtraData attribute which contains 'last modification' data
+          if (KrbExtraDataAttribute::isLastModification($this->attrs['krbExtraData'][$i])) {
+            $this->attrs['krbExtraData'][$i] = KrbExtraDataAttribute::packLastModification();
+          }
+      }
+    }
+
+    return $errors;
   }
 
 }
