@@ -3,7 +3,7 @@
 /*
   This code is part of FusionDirectory (http://www.fusiondirectory.org/)
   Copyright (C) 2003  Cajus Pollmeier
-  Copyright (C) 2011-2016  FusionDirectory
+  Copyright (C) 2011-2018  FusionDirectory
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ class posixGroup extends simplePlugin
       'members' => array(
         'name'  => _('Group members'),
         'attrs' => array(
-          new UsersAttribute(
+          new ObjectsAttribute(
             '', _('Group members'),
             'memberUid', FALSE,
             array(), 'uid'
