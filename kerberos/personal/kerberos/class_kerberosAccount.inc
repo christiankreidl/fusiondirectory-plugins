@@ -81,7 +81,7 @@ class kerberosAccount extends simplePlugin
       'plSelfModify'  => FALSE,
       'plObjectClass' => ['krbPrincipalAux','krbTicketPolicyAux'],
       'plFilter'      => '(objectClass=krbPrincipalAux)',
-      'plObjectType'  => ['user'],
+      'plObjectType'  => ['user', 'server','workstation','terminal','printer','component','phone','mobilePhone'],
 
       'plProvidedAcls'  => parent::generatePlProvidedAcls(static::getAttributesInfo())
     ];
