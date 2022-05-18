@@ -2,7 +2,7 @@
 /*
   This code is part of FusionDirectory (http://www.fusiondirectory.org/)
   Copyright (C) 2003  Cajus Pollmeier
-  Copyright (C) 2011-2016  FusionDirectory
+  Copyright (C) 2011-2018  FusionDirectory
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,30 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
 */
+
+class systemNetgroupSelect extends simpleSelectManagement
+{
+  protected $autoFilterAttributes = array('dn', 'cn', 'ipHostNumber', 'macAddress');
+  protected $objectTypes = array(
+    'terminal', 'workstation', 'server'
+  );
+
+  function __construct()
+  {
+    if (class_available('netgroup')) {
+      array_push($this->objectTypes, 'netgroup');
+    }
+    parent::__construct();
+  }
+}
+
+/*! \brief System selection dialog
+ */
+class systemNetgroupSelectDialog extends GenericSelectDialog
+{
+  protected $dialogClass = 'systemNetgroupSelect';
+}
+
 
 class SudoUsersGroupsAttribute extends DialogAttribute
 {
@@ -50,8 +74,52 @@ class SudoUsersGroupsAttribute extends DialogAttribute
   }
 }
 
-class SudoSystemsAttribute extends SystemsAttribute
+class SudoSystemsAttribute extends DialogAttribute
 {
+  protected $dialogClass = 'systemNetgroupSelectDialog';
+
+  function addValue ($dn, $entry)
+  {
+    if ( in_array('nisNetgroup', $entry['objectClass']) ) {
+      $value = trim("+".$entry['cn'][0]);
+    } elseif (isset($entry['uid'][0])) {
+      $value = trim($entry['cn'][0]);
+    }
+    if (!in_array($value, $this->value)) {
+      $this->value[]    = $value;
+    }
+    if (isset($this->value[0]) && ($this->value[0] === 'ALL')) {
+      unset($this->value[0]);
+    }
+    parent::addValue($dn, $entry);
+  }
+
+  function getFilterBlackList ()
+  {
+    return array('cn' => $this->getValue());
+  }
+  
+  protected function fillDisplayValueFrom ($i, $attrs)
+  {
+    if (!isset($attrs[$this->display_attr])) {
+      unset($this->value[$i]);
+    } else {
+      if ($this->display_attr == 'dn') {
+        $this->displays[$i] = $attrs['dn'];
+      } elseif (in_array('fdTerminal', $attrs['objectClass'])) {
+        $this->displays[$i] = sprintf(_('Terminal %s'), trim($attrs['cn'][0]));
+      } elseif (in_array('fdServer', $attrs['objectClass'])) {
+        $this->displays[$i] = sprintf(_('Server %s'), trim($attrs['cn'][0]));
+      } elseif (in_array('fdWorkstation', $attrs['objectClass'])) {
+        $this->displays[$i] = sprintf(_('Workstation %s'), trim($attrs['cn'][0]));
+      } elseif (in_array('nisNetgroup', $attrs['objectClass'])) {
+        $this->displays[$i] = sprintf(_('Netgroup %s'), trim($attrs['cn'][0]));
+      } else {
+        $this->displays[$i] = $attrs[$this->display_attr][0];
+      }
+    }
+  }
+  
   function renderButtons ()
   {
     $id = $this->getHtmlId();
@@ -80,13 +148,6 @@ class SudoSystemsAttribute extends SystemsAttribute
     }
   }
 
-  function addValue ($value, $attrs)
-  {
-    if (isset($this->value[0]) && ($this->value[0] === 'ALL')) {
-      unset($this->value[0]);
-    }
-    parent::addValue($value, $attrs);
-  }
 }
 
 class defaultRoleAttribute extends BooleanAttribute
@@ -141,6 +202,7 @@ class sudo extends simplePlugin
           array('serverGeneric', 'cn'),
           array('workstationGeneric', 'cn'),
           array('terminalGeneric', 'cn'),
+          array('netgroup', 'cn'),
         ),
       ),
 
