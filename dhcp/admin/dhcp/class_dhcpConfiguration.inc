@@ -59,6 +59,18 @@ class DhcpSectionsAttribute extends DialogOrderedArrayAttribute
     $objtype = $this->objectType($dn);
     $dhcpObject = new $objtype($this->plugin, $dn, $this->dhcpObjectCache[$dn]);
     if (count(dhcpConfiguration::$sectionMap[$objtype])) {
+      if ($objtype == 'dhcpGroup') {
+        if ($dn === $this->subnet_expanded) {
+          $link = $subnetExpandedImg.$link;
+        } else {
+          $link = $subnetExpandImg.$link;
+        }
+        return array(
+          array('html' => $link),
+          '',
+          '',
+        );
+      } else 
       if ($objtype == 'dhcpService') {
         if ($dn === $this->subnet_expanded) {
           $link = $subnetExpandedImg.$link;
