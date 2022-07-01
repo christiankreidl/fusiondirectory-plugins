@@ -134,9 +134,20 @@ class DhcpHostsAttribute extends OrderedArrayAttribute
 
     $this->value = array();
 
+    $macs   = $this->plugin->parent->getBaseObject()->macAddress;
+    if (!is_array($macs)) {
+      $macs = array($macs);
+    }
+
+    $ldapsearch_macs = "(|";
+    foreach($macs as $mac) {
+      $ldapsearch_macs = $ldapsearch_macs . "(dhcpHWAddress=ethernet " . $mac . ")";
+    }
+    $ldapsearch_macs = $ldapsearch_macs . ")";
+
     $ldap = $config->get_ldap_link();
     $ldap->cd($config->current['BASE']);
-    $ldap->search('(&(objectClass=dhcpHost)(cn='.$this->plugin->parent->getBaseObject()->cn.')(dhcpHWAddress=*))', array('dhcpStatements','dhcpHWAddress','dn'));
+    $ldap->search('(&(objectClass=dhcpHost)'.$ldapsearch_macs.')', array('dhcpStatements','dhcpHWAddress','dn'));
     while ($attrs = $ldap->fetch()) {
       $ip = '';
       foreach ($attrs['dhcpStatements'] as $statement) {

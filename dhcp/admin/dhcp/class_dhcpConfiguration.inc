@@ -192,6 +192,8 @@ class DhcpSectionsAttribute extends DialogOrderedArrayAttribute
   /* Used by dhcpHost */
   function addHost($parentDn, $cn, $mac, $ip)
   {
+    $hostname = $cn;
+    $cn = $cn."-".preg_replace('/[:]/', '', $mac);
     $dn = 'cn='.$cn.','.$parentDn;
     $this->dhcpObjectCache[$dn] = array(
       'dn'              => $dn,
