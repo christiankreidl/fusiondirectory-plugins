@@ -203,7 +203,9 @@ class DhcpSectionsAttribute extends DialogOrderedArrayAttribute
       'dhcpStatements'  => array(
         'fixed-address '.$ip
       ),
-      'dhcpOption'      => array(),
+      'dhcpOption'      => array(
+	'host-name "'.$hostname.'"'
+      ),
       'dhcpComments'    => array(),
       'MODIFIED'        => TRUE,
     );
