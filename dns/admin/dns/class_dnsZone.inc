@@ -86,7 +86,7 @@ class DnsRecordPlugin extends simplePlugin
     } elseif (!($parent instanceof dnsZone)) {
       /* Read default values from system: cn and IPs */
       $this->relativeSubdomainName = preg_replace('/\$$/', '', $parent->parent->getBaseObject()->cn);
-      $ips = $parent->parent->getBaseObject()->ipHostNumber;
+      $ips = array($parent->parent->getBaseObject()->ipHostNumber);
       $this->attributesAccess['dnsRecord']->setParentIPs(
         array_filter($ips, 'tests::is_ipv4'),
         array_filter($ips, 'tests::is_ipv6'),

@@ -81,7 +81,7 @@ class DnsRecordsFilteredAttribute extends DnsRecordsAttribute
     if ($this->plugin->is_template) {
       return $values;
     }
-    $ips    = $this->plugin->parent->getBaseObject()->ipHostNumber;
+    $ips    = array($this->plugin->parent->getBaseObject()->ipHostNumber);
     $cn     = preg_replace('/\$$/', '', $this->plugin->parent->getBaseObject()->cn);
     if (in_array($values[2], $ips) || (!empty($cn) && (($values[0] == $cn) || preg_match('/'.preg_quote($cn.'.'.$this->getZoneName(), '/i').'/', $value[2])))) {
       return $values;
